@@ -1,0 +1,30 @@
+<Window x:Class="FeilingPetShell.SpeechBubbleWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title=""
+        SizeToContent="WidthAndHeight"
+        AllowsTransparency="True"
+        Background="Transparent"
+        WindowStyle="None"
+        ResizeMode="NoResize"
+        ShowInTaskbar="False"
+        ShowActivated="False"
+        Topmost="True"
+        Focusable="False"
+        IsHitTestVisible="False">
+    <Grid Background="Transparent"
+          IsHitTestVisible="False">
+        <Border MaxWidth="188"
+                Background="#F8FFF7F2"
+                BorderBrush="#30AF705F"
+                BorderThickness="1"
+                CornerRadius="16"
+                Padding="12,8">
+            <TextBlock x:Name="SpeechText"
+                       Text="我在。"
+                       FontSize="12"
+                       Foreground="#FF4A2C2A"
+                       TextWrapping="Wrap" />
+        </Border>
+    </Grid>
+</Window>

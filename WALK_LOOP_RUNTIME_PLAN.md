@@ -89,6 +89,8 @@
 
 - 鼠标在 dead zone 外，且本 tick 发生位移时：播放 `walk_loop`
 - 鼠标进入 dead zone 或本 tick 没有位移时：播放 `idle_loop`
+- 跟随使用 `engage / release` 两段距离阈值，避免靠近鼠标时反复“追一下又停一下”
+- 移动目标保持一段固定跟随距离，不直接贴到鼠标点上
 
 ## 左右朝向规则
 

@@ -40,7 +40,9 @@ public partial class MainWindow : Window
     private const byte AlphaThreshold = 8;
     private const double WanderSpeedPixelsPerSecond = 96;
     private const double FollowSpeedPixelsPerSecond = 152;
-    private const double FollowMouseDeadZone = 86;
+    private const double FollowMouseEngageDistance = 132;
+    private const double FollowMouseReleaseDistance = 96;
+    private const double FollowMousePreferredDistance = 108;
     private const double WanderArrivalThreshold = 10;
     private const double ScreenPadding = 8;
     private const double FacingChangeThreshold = 0.5;
@@ -82,6 +84,7 @@ public partial class MainWindow : Window
     private int _idleLoopFrameIndex;
     private int _idleLoopDirection = 1;
     private int _walkLoopFrameIndex;
+    private bool _followMouseActive;
     private bool _useIdleLoop;
     private PetAnimationMode _animationMode = PetAnimationMode.BaseIdle;
     private PetFacingDirection _facingDirection = PetFacingDirection.Left;
@@ -348,6 +351,7 @@ public partial class MainWindow : Window
     {
         _movementMode = mode;
         _movementTarget = null;
+        _followMouseActive = false;
         _wanderPauseUntilUtc = mode == PetMovementMode.Wander
             ? DateTime.UtcNow.AddMilliseconds(_random.Next(1200, 2600))
             : DateTime.MinValue;
@@ -487,21 +491,39 @@ public partial class MainWindow : Window
     {
         if (!TryGetCursorScreenPosition(out var cursor))
         {
+            _followMouseActive = false;
             return false;
         }
-
-        var target = new Point(
-            cursor.X - (Width * 0.5),
-            cursor.Y - (_petDisplayHeight * 0.72));
 
         var currentAnchor = new Point(Left + (Width * 0.5), Top + (_petDisplayHeight * 0.72));
-        var distance = Distance(currentAnchor, cursor);
-        if (distance < FollowMouseDeadZone)
+        var toCursor = new Vector(cursor.X - currentAnchor.X, cursor.Y - currentAnchor.Y);
+        var distance = toCursor.Length;
+
+        if (!_followMouseActive)
         {
+            if (distance <= FollowMouseEngageDistance)
+            {
+                return false;
+            }
+
+            _followMouseActive = true;
+        }
+
+        if (distance <= FollowMouseReleaseDistance)
+        {
+            _followMouseActive = false;
             return false;
         }
 
-        MoveTowards(target, FollowSpeedPixelsPerSecond, elapsed, 6, out var appliedDelta);
+        var directionToCursor = toCursor / distance;
+        var desiredAnchor = new Point(
+            cursor.X - (directionToCursor.X * FollowMousePreferredDistance),
+            cursor.Y - (directionToCursor.Y * FollowMousePreferredDistance));
+        var target = new Point(
+            desiredAnchor.X - (Width * 0.5),
+            desiredAnchor.Y - (_petDisplayHeight * 0.72));
+
+        MoveTowards(target, FollowSpeedPixelsPerSecond, elapsed, 8, out var appliedDelta);
         UpdateFacingDirectionFromMovement(appliedDelta);
         return DidMove(appliedDelta);
     }

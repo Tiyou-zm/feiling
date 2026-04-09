@@ -100,6 +100,11 @@
 
 当前镜像使用的是 `PetDragSurface` 上已有的 `PetScaleTransform`，因此会同时作用于角色本体和 overlay 层。
 
+当前 `walk_loop` 源帧的天然朝向按“朝左”处理：
+
+- 向左移动：使用源帧原始朝向
+- 向右移动：对源帧做水平镜像
+
 如果后续观察到源素材的默认朝向与实际相反，可以只调整：
 
 - `desktop/FeilingPetShell/MainWindow.xaml.cs`

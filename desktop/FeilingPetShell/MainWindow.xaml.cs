@@ -44,7 +44,8 @@ public partial class MainWindow : Window
     private const double WanderArrivalThreshold = 10;
     private const double ScreenPadding = 8;
     private const double FacingChangeThreshold = 0.5;
-    private const int SourceSpriteFacingScaleX = 1;
+    // The extracted walk frames are naturally left-facing.
+    private const int SourceSpriteFacingScaleX = -1;
 
     private readonly string _projectRoot;
     private readonly DispatcherTimer _speechTimer;
@@ -83,7 +84,7 @@ public partial class MainWindow : Window
     private int _walkLoopFrameIndex;
     private bool _useIdleLoop;
     private PetAnimationMode _animationMode = PetAnimationMode.BaseIdle;
-    private PetFacingDirection _facingDirection = PetFacingDirection.Right;
+    private PetFacingDirection _facingDirection = PetFacingDirection.Left;
 
     public MainWindow()
     {

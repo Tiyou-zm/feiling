@@ -90,6 +90,7 @@ feiling
 - `docs\FEILING_DIALOGUE_GUIDE.md`
 - `FEILING_MOVEMENT_PLAN.md`
 - `WALK_LOOP_BRIEF.md`
+- `WALK_LOOP_RUNTIME_PLAN.md`
 - `BLINK_SPRITESHEET_BRIEF.md`
 - `IDLE_BREATH_SPRITESHEET_BRIEF.md`
 - `LIVE2D_SPRITE_HYBRID_BRIEF.md`
@@ -106,7 +107,7 @@ feiling
 
 - 把待机循环继续收顺
 - 继续收口闲逛与追鼠标手感
-- 准备走路循环素材
+- 把 `walk_loop` 正式接入运行时
 - 再决定是否继续引入更复杂表现方案
 
 ## 备注

@@ -71,6 +71,8 @@
   - 绯铃移动行为计划
 - `WALK_LOOP_BRIEF.md`
   - 给素材 agent 的走路循环任务单
+- `WALK_LOOP_RUNTIME_PLAN.md`
+  - walk_loop 运行时素材收敛与接入方案
 - `BLINK_SPRITESHEET_BRIEF.md`
   - 待机眨眼精灵图任务单
 - `IDLE_BREATH_SPRITESHEET_BRIEF.md`
@@ -123,6 +125,19 @@
   - `scripts/build_feiling_idle_loop.py`
 - 运行时帧目录：
   - `assets/characters/feiling/animations/idle_loop`
+
+## 当前 walk_loop 方案
+
+- 第一版运行时源：
+  - `assets/characters/feiling/animations/video_extract_20260327/selected_70_spread_fixed`
+- 过渡素材储备：
+  - `assets/characters/feiling/animations/video_extract_20260327/selected_70_idle_bridge_fixed`
+- 构建脚本：
+  - `scripts/build_feiling_walk_loop.py`
+- 正式运行时目录：
+  - `assets/characters/feiling/animations/walk_loop`
+- 接入方案：
+  - `WALK_LOOP_RUNTIME_PLAN.md`
 
 ## 当前移动方案
 

@@ -27,11 +27,14 @@
 - `animations/feiling_idle_blink_closed_overlay_v2.png`
 - `animations/idle_loop/feiling_idle_loop_000.png` ~ `feiling_idle_loop_060.png`
 - `animations/idle_loop/manifest.txt`
+- `animations/walk_loop/feiling_walk_loop_000.png` ~ `feiling_walk_loop_011.png`
+- `animations/walk_loop/manifest.txt`
 
 说明：
 
 - 旧 blink overlay 素材仍保留
 - 当前正式待机主方案已切到 `idle_loop` 精灵帧目录
+- 第一版 `walk_loop` 运行时目录已固定，素材来自 `video_extract_20260327/selected_70_spread_fixed`
 
 ## 原始导出图
 
@@ -44,6 +47,13 @@
 - `references/source_exports/feiling_idle_blink_half_source_v1.png`
 - `references/source_exports/feiling_idle_blink_closed_source_v1.png`
 - `references/source_exports/feiling_idle_loop_sheet_source_v1.png`
+
+## 动作候选素材
+
+- `animations/video_extract_20260327/selected_70_spread_fixed/`
+  - 第一版 `walk_loop` 正式运行时源
+- `animations/video_extract_20260327/selected_70_idle_bridge_fixed/`
+  - 未来 `idle -> walk / walk -> idle` 过渡素材储备
 
 ## 历史归档
 
@@ -59,3 +69,4 @@
 4. `confused`
 5. `smug`
 6. `idle loop`
+7. `walk loop`

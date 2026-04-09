@@ -29,6 +29,8 @@
 - `states/feiling_smug_v1.png`
 - `animations/idle_loop/feiling_idle_loop_000.png` ~ `feiling_idle_loop_060.png`
 - `animations/idle_loop/manifest.txt`
+- `animations/walk_loop/feiling_walk_loop_000.png` ~ `feiling_walk_loop_011.png`
+- `animations/walk_loop/manifest.txt`
 
 ## 使用约定
 
@@ -50,6 +52,13 @@
 - WPF 运行时直接按顺序循环播放
 
 旧的 `idle blink overlay` 方案保留为实验素材，不再作为当前正式待机主方案。
+
+当前 `walk_loop` 的第一版运行时方案已经固定：
+
+- 运行时正式目录：`animations/walk_loop`
+- 正式源：`animations/video_extract_20260327/selected_70_spread_fixed`
+- 过渡储备：`animations/video_extract_20260327/selected_70_idle_bridge_fixed`
+- 构建脚本：`scripts/build_feiling_walk_loop.py`
 
 ## 当前结论
 

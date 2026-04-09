@@ -44,3 +44,30 @@
 - 初始化 Git 仓库，并为 GitHub 公开仓库创建做整理。
 - 在 GitHub 创建公开仓库并推送 `origin/main`：
   - `https://github.com/Tiyou-zm/feiling`
+
+## 2026-04-10
+
+### 进展梳理
+
+- 回看当前 `feiling` 项目文档、代码和最近提交，确认主线仍然是桌宠本体打磨。
+- 追查 `walk_loop` 当前状态，确认代码侧尚未接入，但 2026-03-27 已新增一批可作为走路候选的动作抽帧素材。
+- 把这批新动作素材正式梳理成可接入运行时的 `walk_loop` 方案。
+
+### 当前判断
+
+- `desktop/FeilingPetShell/MainWindow.xaml.cs` 当前只有 `idle_loop` 加载和播放逻辑，还没有 `walk_loop` 资源加载与状态切换。
+- `assets/characters/feiling/animations/video_extract_20260327/selected_70_spread_fixed` 更适合作为第一版纯 `walk_loop` 正式源。
+- `assets/characters/feiling/animations/video_extract_20260327/selected_70_idle_bridge_fixed` 包含 `idle_ref / intro_blend / outro_blend`，更适合保留为以后补过渡动画的储备。
+
+### 本步处理
+
+- 新增 `scripts/build_feiling_walk_loop.py`，把 `selected_70_spread_fixed` 均匀抽样为 12 帧正式 `walk_loop` 运行时序列。
+- 固定正式运行时目录为 `assets/characters/feiling/animations/walk_loop`。
+- 新增 `WALK_LOOP_RUNTIME_PLAN.md`，明确素材来源、构建方式、运行时切换规则和后续代码接入点。
+- 同步 `README.md`、`PROJECT_CONTEXT.md`、`assets/characters/feiling/README.md`、`assets/characters/feiling/ASSET_MANIFEST.md`。
+
+### 当前缺口
+
+- `walk_loop` 运行时目录虽已可构建，但还没正式接入 WPF 代码。
+- `idle -> walk` 和 `walk -> idle` 过渡逻辑仍未实现。
+- 左右朝向翻转、按速度调步频、移动中的更细致角色感，仍属于后续阶段。

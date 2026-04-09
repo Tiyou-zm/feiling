@@ -38,14 +38,17 @@ public partial class MainWindow : Window
     private const double WindowHorizontalPadding = 6;
     private const double WindowVerticalPadding = 6;
     private const byte AlphaThreshold = 8;
+    private const double IdleLoopFrameIntervalMilliseconds = 92;
+    private const double WalkLoopFrameIntervalMilliseconds = 136;
     private const double WanderSpeedPixelsPerSecond = 96;
     private const double FollowSpeedPixelsPerSecond = 152;
-    private const double FollowMouseEngageDistance = 132;
-    private const double FollowMouseReleaseDistance = 96;
-    private const double FollowMousePreferredDistance = 108;
+    private const double FollowMouseEngageDistance = 148;
+    private const double FollowMouseReleaseDistance = 72;
+    private const double FollowMousePreferredDistance = 96;
     private const double WanderArrivalThreshold = 10;
     private const double ScreenPadding = 8;
     private const double FacingChangeThreshold = 0.5;
+    private const double FollowFacingDirectionThreshold = 0.18;
     // The extracted walk frames are naturally left-facing.
     private const int SourceSpriteFacingScaleX = -1;
 
@@ -96,7 +99,7 @@ public partial class MainWindow : Window
         _projectRoot = ResolveProjectRoot();
         _speechWindow = new SpeechBubbleWindow();
         _speechTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(3.2) };
-        _idleLoopTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(92) };
+        _idleLoopTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(IdleLoopFrameIntervalMilliseconds) };
         _movementTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(33) };
         _blinkIntervalTimer = new DispatcherTimer();
         _blinkFrameTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(115) };
@@ -441,21 +444,26 @@ public partial class MainWindow : Window
         }
 
         _animationMode = mode;
+        UpdateAnimationTimerInterval();
         switch (_animationMode)
         {
             case PetAnimationMode.WalkLoop:
-                _walkLoopFrameIndex = 0;
                 ApplyCurrentAnimationFrame();
                 break;
             case PetAnimationMode.IdleLoop:
-                _idleLoopFrameIndex = 0;
-                _idleLoopDirection = 1;
                 ApplyCurrentAnimationFrame();
                 break;
             default:
                 ApplyCurrentAnimationFrame();
                 break;
         }
+    }
+
+    private void UpdateAnimationTimerInterval()
+    {
+        _idleLoopTimer.Interval = _animationMode == PetAnimationMode.WalkLoop
+            ? TimeSpan.FromMilliseconds(WalkLoopFrameIntervalMilliseconds)
+            : TimeSpan.FromMilliseconds(IdleLoopFrameIntervalMilliseconds);
     }
 
     private bool AdvanceWander(DateTime nowUtc, double elapsed)
@@ -516,6 +524,7 @@ public partial class MainWindow : Window
         }
 
         var directionToCursor = toCursor / distance;
+        UpdateFacingDirectionFromHorizontal(directionToCursor.X);
         var desiredAnchor = new Point(
             cursor.X - (directionToCursor.X * FollowMousePreferredDistance),
             cursor.Y - (directionToCursor.Y * FollowMousePreferredDistance));
@@ -523,8 +532,7 @@ public partial class MainWindow : Window
             desiredAnchor.X - (Width * 0.5),
             desiredAnchor.Y - (_petDisplayHeight * 0.72));
 
-        MoveTowards(target, FollowSpeedPixelsPerSecond, elapsed, 8, out var appliedDelta);
-        UpdateFacingDirectionFromMovement(appliedDelta);
+        MoveTowards(target, FollowSpeedPixelsPerSecond, elapsed, 16, out var appliedDelta);
         return DidMove(appliedDelta);
     }
 
@@ -586,10 +594,23 @@ public partial class MainWindow : Window
             return;
         }
 
-        _facingDirection = appliedDelta.X < 0
-            ? PetFacingDirection.Left
-            : PetFacingDirection.Right;
-        ApplyFacingDirection();
+        UpdateFacingDirectionFromHorizontal(appliedDelta.X);
+    }
+
+    private void UpdateFacingDirectionFromHorizontal(double horizontalDirection)
+    {
+        if (horizontalDirection > FollowFacingDirectionThreshold)
+        {
+            _facingDirection = PetFacingDirection.Right;
+            ApplyFacingDirection();
+            return;
+        }
+
+        if (horizontalDirection < -FollowFacingDirectionThreshold)
+        {
+            _facingDirection = PetFacingDirection.Left;
+            ApplyFacingDirection();
+        }
     }
 
     private void ApplyFacingDirection()

@@ -6,8 +6,7 @@ from pathlib import Path
 
 
 SOURCE_SET_NAME = "selected_70_spread_fixed"
-WALK_LOOP_START_FRAME_1BASED = 32
-WALK_LOOP_END_FRAME_1BASED = 43
+WALK_LOOP_SOURCE_FRAMES_1BASED = [24, 26, 28, 30, 32, 34, 36, 38, 40]
 
 
 def main() -> None:
@@ -36,14 +35,12 @@ def main() -> None:
 
     source_manifest = json.loads(source_manifest_path.read_text(encoding="utf-8"))
     source_frames = sorted(source_frames_dir.glob("*.png"))
-    selected_indices = list(
-        range(WALK_LOOP_START_FRAME_1BASED - 1, WALK_LOOP_END_FRAME_1BASED)
-    )
+    selected_indices = [frame_number - 1 for frame_number in WALK_LOOP_SOURCE_FRAMES_1BASED]
     target_frame_count = len(selected_indices)
 
-    if selected_indices[-1] >= len(source_frames):
+    if max(selected_indices) >= len(source_frames):
         raise SystemExit(
-            f"Walk loop selection exceeds available frames: last={selected_indices[-1] + 1}, available={len(source_frames)}"
+            f"Walk loop selection exceeds available frames: last={max(selected_indices) + 1}, available={len(source_frames)}"
         )
 
     target_dir.mkdir(parents=True, exist_ok=True)
@@ -56,8 +53,8 @@ def main() -> None:
         f"source_set={SOURCE_SET_NAME}",
         f"source_frame_count={len(source_frames)}",
         f"target_frame_count={target_frame_count}",
-        f"selection_range_1based={WALK_LOOP_START_FRAME_1BASED}-{WALK_LOOP_END_FRAME_1BASED}",
-        "selection_mode=contiguous_stable_walk_window",
+        "selection_frames_1based=" + ",".join(str(frame_number) for frame_number in WALK_LOOP_SOURCE_FRAMES_1BASED),
+        "selection_mode=curated_stride_frames",
     ]
 
     source_indices_1based = source_manifest.get("source_frame_indices_1based", [])

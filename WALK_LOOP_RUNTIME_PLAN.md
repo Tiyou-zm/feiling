@@ -55,12 +55,16 @@
 
 - 源目录：`assets/characters/feiling/animations/video_extract_20260327/selected_70_spread_fixed/frames`
 - 源 manifest：`feiling_video_motion_bridge_spread_fixed_70_manifest.json`
-- 运行时正式取帧区间：`032 ~ 043`
-- 选择方式：从稳定朝向的连续中段步行动作中截取一段闭环窗口
-- 目标帧数：`12`
+- 运行时正式取帧：`024, 026, 028, 030, 032, 034, 036, 038, 040`
+- 选择方式：从稳定朝向步行段里手工挑出一组步幅更明显、首尾更容易闭环的 stride 帧
+- 目标帧数：`9`
 - 保留统一后的画布尺寸和角色摆位，不再二次裁切
 
-这样做是因为整段均匀抽样会混入起步、回正和收步帧，循环后会出现“走几步像要停一下 / 转一下”的违和感。
+这样做是因为：
+
+- 整段均匀抽样会混入起步、回正和收步帧，循环后会出现“走几步像要停一下 / 转一下”的违和感
+- 单纯取一整段连续帧虽然更稳，但体感会偏慢
+- 手工挑 stride 帧能在不混入转身帧的前提下，把步调再提起来
 
 ## 构建脚本
 
@@ -71,7 +75,7 @@
 作用：
 
 - 从 `selected_70_spread_fixed/frames` 中均匀抽取 12 帧
-- 从 `selected_70_spread_fixed/frames` 中截取稳定步行动作窗口
+- 从 `selected_70_spread_fixed/frames` 中挑选 stride 更明确的正式帧
 - 输出到 `animations/walk_loop`
 - 生成 `manifest.txt`
 - 在 manifest 中保留“运行时帧 -> 候选帧 -> 原视频帧”的映射

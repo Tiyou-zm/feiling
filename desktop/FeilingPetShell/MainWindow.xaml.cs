@@ -51,6 +51,12 @@ public partial class MainWindow : Window
     private const double FollowFacingDirectionThreshold = 0.18;
     // The extracted walk frames are naturally left-facing.
     private const int SourceSpriteFacingScaleX = -1;
+    private const int WanderStartPauseMinMilliseconds = 1680;
+    private const int WanderStartPauseMaxMilliseconds = 3640;
+    private const int WanderRestPauseMinMilliseconds = 2520;
+    private const int WanderRestPauseMaxMilliseconds = 6720;
+    private const double WanderHorizontalRangePixels = 144;
+    private const double WanderVerticalRangePixels = 64;
 
     private readonly string _projectRoot;
     private readonly DispatcherTimer _speechTimer;
@@ -356,7 +362,7 @@ public partial class MainWindow : Window
         _movementTarget = null;
         _followMouseActive = false;
         _wanderPauseUntilUtc = mode == PetMovementMode.Wander
-            ? DateTime.UtcNow.AddMilliseconds(_random.Next(1200, 2600))
+            ? DateTime.UtcNow.AddMilliseconds(_random.Next(WanderStartPauseMinMilliseconds, WanderStartPauseMaxMilliseconds))
             : DateTime.MinValue;
         UpdateMovementUi();
         SetAnimationMode(GetIdleAnimationMode());
@@ -489,7 +495,7 @@ public partial class MainWindow : Window
         if (reached)
         {
             _movementTarget = null;
-            _wanderPauseUntilUtc = nowUtc.AddMilliseconds(_random.Next(1800, 4800));
+            _wanderPauseUntilUtc = nowUtc.AddMilliseconds(_random.Next(WanderRestPauseMinMilliseconds, WanderRestPauseMaxMilliseconds));
         }
 
         return DidMove(appliedDelta);
@@ -541,8 +547,8 @@ public partial class MainWindow : Window
         var bounds = GetUsableWorkArea();
         var currentX = Left;
         var currentY = Top;
-        var dx = _random.NextDouble() * 180 - 90;
-        var dy = _random.NextDouble() * 80 - 40;
+        var dx = _random.NextDouble() * (WanderHorizontalRangePixels * 2) - WanderHorizontalRangePixels;
+        var dy = _random.NextDouble() * (WanderVerticalRangePixels * 2) - WanderVerticalRangePixels;
         var target = new Point(currentX + dx, currentY + dy);
         return ClampWindowPosition(target);
     }

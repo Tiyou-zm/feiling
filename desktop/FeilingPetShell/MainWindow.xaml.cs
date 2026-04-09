@@ -55,8 +55,8 @@ public partial class MainWindow : Window
     private const int WanderStartPauseMaxMilliseconds = 3640;
     private const int WanderRestPauseMinMilliseconds = 2520;
     private const int WanderRestPauseMaxMilliseconds = 6720;
-    private const double WanderHorizontalRangePixels = 144;
-    private const double WanderVerticalRangePixels = 64;
+    private const double WanderHorizontalRangePixels = 288;
+    private const double WanderVerticalRangePixels = 128;
 
     private readonly string _projectRoot;
     private readonly DispatcherTimer _speechTimer;

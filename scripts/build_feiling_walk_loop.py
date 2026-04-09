@@ -1,30 +1,13 @@
 from __future__ import annotations
 
 import json
-import math
 import shutil
 from pathlib import Path
 
 
-TARGET_FRAME_COUNT = 12
 SOURCE_SET_NAME = "selected_70_spread_fixed"
-
-
-def sample_indices(total_frames: int, target_frames: int) -> list[int]:
-    if total_frames < target_frames:
-        raise ValueError(
-            f"Not enough source frames to build walk loop: {total_frames} < {target_frames}"
-        )
-
-    step = total_frames / target_frames
-    sampled = [math.floor(index * step) for index in range(target_frames)]
-
-    if len(set(sampled)) != target_frames:
-        raise ValueError(
-            f"Sampling produced duplicate indices: total={total_frames}, target={target_frames}, sampled={sampled}"
-        )
-
-    return sampled
+WALK_LOOP_START_FRAME_1BASED = 32
+WALK_LOOP_END_FRAME_1BASED = 43
 
 
 def main() -> None:
@@ -53,7 +36,15 @@ def main() -> None:
 
     source_manifest = json.loads(source_manifest_path.read_text(encoding="utf-8"))
     source_frames = sorted(source_frames_dir.glob("*.png"))
-    sampled_indices = sample_indices(len(source_frames), TARGET_FRAME_COUNT)
+    selected_indices = list(
+        range(WALK_LOOP_START_FRAME_1BASED - 1, WALK_LOOP_END_FRAME_1BASED)
+    )
+    target_frame_count = len(selected_indices)
+
+    if selected_indices[-1] >= len(source_frames):
+        raise SystemExit(
+            f"Walk loop selection exceeds available frames: last={selected_indices[-1] + 1}, available={len(source_frames)}"
+        )
 
     target_dir.mkdir(parents=True, exist_ok=True)
     for existing in target_dir.glob("feiling_walk_loop_*.png"):
@@ -64,13 +55,14 @@ def main() -> None:
         f"source_manifest={source_manifest_path}",
         f"source_set={SOURCE_SET_NAME}",
         f"source_frame_count={len(source_frames)}",
-        f"target_frame_count={TARGET_FRAME_COUNT}",
-        "sampling_mode=uniform_spread_no_end_duplicate",
+        f"target_frame_count={target_frame_count}",
+        f"selection_range_1based={WALK_LOOP_START_FRAME_1BASED}-{WALK_LOOP_END_FRAME_1BASED}",
+        "selection_mode=contiguous_stable_walk_window",
     ]
 
     source_indices_1based = source_manifest.get("source_frame_indices_1based", [])
 
-    for output_index, source_index in enumerate(sampled_indices):
+    for output_index, source_index in enumerate(selected_indices):
         source_path = source_frames[source_index]
         out_path = target_dir / f"feiling_walk_loop_{output_index:03d}.png"
         shutil.copy2(source_path, out_path)
@@ -84,7 +76,7 @@ def main() -> None:
         manifest_lines.append(manifest_line)
 
     target_manifest_path.write_text("\n".join(manifest_lines), encoding="utf-8")
-    print(f"Built {TARGET_FRAME_COUNT} walk loop frames in {target_dir}")
+    print(f"Built {target_frame_count} walk loop frames in {target_dir}")
 
 
 if __name__ == "__main__":

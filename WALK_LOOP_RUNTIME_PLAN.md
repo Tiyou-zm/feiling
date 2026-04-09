@@ -74,7 +74,7 @@
 
 ## 运行时切换规则
 
-第一版代码接入时建议保持简单：
+第一版代码接入时已经按下面方式落地：
 
 ### 1. `Pinned`
 
@@ -90,13 +90,28 @@
 - 鼠标在 dead zone 外，且本 tick 发生位移时：播放 `walk_loop`
 - 鼠标进入 dead zone 或本 tick 没有位移时：播放 `idle_loop`
 
+## 左右朝向规则
+
+为避免出现“向左走但动作还是向右”的问题，第一版不额外维护左右两套 PNG，而是直接在运行时按水平位移方向做镜像：
+
+- 向右移动：保持原始朝向
+- 向左移动：水平镜像当前帧
+- 停下后：保留最后一次移动时的朝向
+
+当前镜像使用的是 `PetDragSurface` 上已有的 `PetScaleTransform`，因此会同时作用于角色本体和 overlay 层。
+
+如果后续观察到源素材的默认朝向与实际相反，可以只调整：
+
+- `desktop/FeilingPetShell/MainWindow.xaml.cs`
+  - `SourceSpriteFacingScaleX`
+
 ## 最小代码改动点
 
 主入口仍是：
 
 - `desktop/FeilingPetShell/MainWindow.xaml.cs`
 
-建议按下面方式接：
+当前代码已经按下面方式接入：
 
 1. 增加 `walk_loop` 资源加载
 2. 把“当前播放动画”从“只有 idle”改成“idle / walk”两态
@@ -110,7 +125,6 @@
 
 - `idle -> walk` 混合过渡
 - `walk -> idle` 混合过渡
-- 左右朝向翻转
 - 根据速度切不同步频
 - 根据模式切不同走路素材
 
@@ -126,5 +140,5 @@
 - `selected_70_idle_bridge_fixed` 作为未来过渡素材储备
 - `animations/walk_loop` 作为正式运行时目录
 - `build_feiling_walk_loop.py` 作为正式构建入口
-
-也就是说，`walk_loop` 目前仍未接入代码，但素材到运行时目录的这一步已经可以稳定重复构建，不需要再靠手工挑文件。
+- `desktop/FeilingPetShell/MainWindow.xaml.cs` 已在移动时切 `walk_loop`，停下时切回 `idle_loop`
+- 左右移动已按水平位移方向自动镜像

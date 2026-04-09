@@ -65,9 +65,12 @@
 - 固定正式运行时目录为 `assets/characters/feiling/animations/walk_loop`。
 - 新增 `WALK_LOOP_RUNTIME_PLAN.md`，明确素材来源、构建方式、运行时切换规则和后续代码接入点。
 - 同步 `README.md`、`PROJECT_CONTEXT.md`、`assets/characters/feiling/README.md`、`assets/characters/feiling/ASSET_MANIFEST.md`。
+- 在 `desktop/FeilingPetShell/MainWindow.xaml.cs` 中正式接入 `walk_loop` 播放逻辑。
+- 移动时切 `walk_loop`，停下时切回 `idle_loop`。
+- 按水平位移方向自动镜像当前动画，解决左右行走朝向问题。
+- 本地重新编译并启动桌宠，确认代码可正常构建运行。
 
 ### 当前缺口
 
-- `walk_loop` 运行时目录虽已可构建，但还没正式接入 WPF 代码。
 - `idle -> walk` 和 `walk -> idle` 过渡逻辑仍未实现。
-- 左右朝向翻转、按速度调步频、移动中的更细致角色感，仍属于后续阶段。
+- 按速度调步频、移动中的更细致角色感，仍属于后续阶段。

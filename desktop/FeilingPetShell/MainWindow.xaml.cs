@@ -20,6 +20,19 @@ public partial class MainWindow : Window
         FollowMouse
     }
 
+    private enum PetAnimationMode
+    {
+        BaseIdle,
+        IdleLoop,
+        WalkLoop
+    }
+
+    private enum PetFacingDirection
+    {
+        Right = 1,
+        Left = -1
+    }
+
     private const double TargetPetDisplayHeight = 330;
     private const double RightMenuReserveWidth = 40;
     private const double WindowHorizontalPadding = 6;
@@ -30,6 +43,8 @@ public partial class MainWindow : Window
     private const double FollowMouseDeadZone = 86;
     private const double WanderArrivalThreshold = 10;
     private const double ScreenPadding = 8;
+    private const double FacingChangeThreshold = 0.5;
+    private const int SourceSpriteFacingScaleX = 1;
 
     private readonly string _projectRoot;
     private readonly DispatcherTimer _speechTimer;
@@ -39,6 +54,7 @@ public partial class MainWindow : Window
     private readonly DispatcherTimer _blinkFrameTimer;
     private readonly SpeechBubbleWindow _speechWindow;
     private readonly List<BitmapSource> _idleLoopFrames = new();
+    private readonly List<BitmapSource> _walkLoopFrames = new();
     private readonly List<BitmapSource?> _blinkFrames = new();
     private readonly string[] _greetingLines =
     {
@@ -64,7 +80,10 @@ public partial class MainWindow : Window
     private int _blinkFrameIndex = -1;
     private int _idleLoopFrameIndex;
     private int _idleLoopDirection = 1;
+    private int _walkLoopFrameIndex;
     private bool _useIdleLoop;
+    private PetAnimationMode _animationMode = PetAnimationMode.BaseIdle;
+    private PetFacingDirection _facingDirection = PetFacingDirection.Right;
 
     public MainWindow()
     {
@@ -88,6 +107,7 @@ public partial class MainWindow : Window
         _blinkFrameTimer.Tick += (_, _) => AdvanceBlinkFrame();
 
         LoadIdleLoopFrames();
+        LoadWalkLoopFrames();
         LoadPetImage();
         LoadBlinkFrames();
         Loaded += OnLoaded;
@@ -113,7 +133,9 @@ public partial class MainWindow : Window
         _lastMovementTickUtc = DateTime.UtcNow;
         _movementTimer.Start();
         UpdateMovementUi();
-        if (_useIdleLoop)
+        ApplyFacingDirection();
+        SetAnimationMode(GetIdleAnimationMode());
+        if (_useIdleLoop || _walkLoopFrames.Count > 0)
         {
             _idleLoopTimer.Start();
         }
@@ -182,6 +204,23 @@ public partial class MainWindow : Window
             var frame = LoadBitmap(path);
             frame.Freeze();
             _idleLoopFrames.Add(frame);
+        }
+    }
+
+    private void LoadWalkLoopFrames()
+    {
+        var walkLoopDir = Path.Combine(_projectRoot, "assets", "characters", "feiling", "animations", "walk_loop");
+        if (!Directory.Exists(walkLoopDir))
+        {
+            return;
+        }
+
+        _walkLoopFrames.Clear();
+        foreach (var path in Directory.GetFiles(walkLoopDir, "feiling_walk_loop_*.png").OrderBy(path => path))
+        {
+            var frame = LoadBitmap(path);
+            frame.Freeze();
+            _walkLoopFrames.Add(frame);
         }
     }
 
@@ -312,6 +351,7 @@ public partial class MainWindow : Window
             ? DateTime.UtcNow.AddMilliseconds(_random.Next(1200, 2600))
             : DateTime.MinValue;
         UpdateMovementUi();
+        SetAnimationMode(GetIdleAnimationMode());
     }
 
     private void UpdateMovementUi()
@@ -354,45 +394,99 @@ public partial class MainWindow : Window
 
         if (_pointerDown || _dragging || MenuPopup.IsOpen)
         {
+            SetAnimationMode(GetIdleAnimationMode());
             return;
         }
 
+        var movedThisTick = false;
         switch (_movementMode)
         {
             case PetMovementMode.Wander:
-                AdvanceWander(nowUtc, elapsed);
+                movedThisTick = AdvanceWander(nowUtc, elapsed);
                 break;
             case PetMovementMode.FollowMouse:
-                AdvanceFollowMouse(elapsed);
+                movedThisTick = AdvanceFollowMouse(elapsed);
+                break;
+        }
+
+        UpdateAnimationForMovement(movedThisTick);
+    }
+
+    private void UpdateAnimationForMovement(bool movedThisTick)
+    {
+        var desiredMode = movedThisTick ? GetWalkAnimationMode() : GetIdleAnimationMode();
+        SetAnimationMode(desiredMode);
+    }
+
+    private PetAnimationMode GetIdleAnimationMode()
+    {
+        return _useIdleLoop ? PetAnimationMode.IdleLoop : PetAnimationMode.BaseIdle;
+    }
+
+    private PetAnimationMode GetWalkAnimationMode()
+    {
+        return _walkLoopFrames.Count > 0 ? PetAnimationMode.WalkLoop : GetIdleAnimationMode();
+    }
+
+    private void SetAnimationMode(PetAnimationMode mode)
+    {
+        if (mode == _animationMode)
+        {
+            return;
+        }
+
+        _animationMode = mode;
+        switch (_animationMode)
+        {
+            case PetAnimationMode.WalkLoop:
+                _walkLoopFrameIndex = 0;
+                ApplyCurrentAnimationFrame();
+                break;
+            case PetAnimationMode.IdleLoop:
+                _idleLoopFrameIndex = 0;
+                _idleLoopDirection = 1;
+                ApplyCurrentAnimationFrame();
+                break;
+            default:
+                ApplyCurrentAnimationFrame();
                 break;
         }
     }
 
-    private void AdvanceWander(DateTime nowUtc, double elapsed)
+    private bool AdvanceWander(DateTime nowUtc, double elapsed)
     {
         if (_movementTarget is null)
         {
             if (nowUtc < _wanderPauseUntilUtc)
             {
-                return;
+                return false;
             }
 
             _movementTarget = PickWanderTarget();
-            return;
+            return false;
         }
 
-        if (MoveTowards(_movementTarget.Value, WanderSpeedPixelsPerSecond, elapsed, WanderArrivalThreshold))
+        var reached = MoveTowards(
+            _movementTarget.Value,
+            WanderSpeedPixelsPerSecond,
+            elapsed,
+            WanderArrivalThreshold,
+            out var appliedDelta);
+        UpdateFacingDirectionFromMovement(appliedDelta);
+        if (reached)
         {
             _movementTarget = null;
             _wanderPauseUntilUtc = nowUtc.AddMilliseconds(_random.Next(1800, 4800));
         }
+
+        return DidMove(appliedDelta);
     }
 
-    private void AdvanceFollowMouse(double elapsed)
+    private bool AdvanceFollowMouse(double elapsed)
     {
         if (!TryGetCursorScreenPosition(out var cursor))
         {
-            return;
+            return false;
         }
 
         var target = new Point(
@@ -403,10 +497,12 @@ public partial class MainWindow : Window
         var distance = Distance(currentAnchor, cursor);
         if (distance < FollowMouseDeadZone)
         {
-            return;
+            return false;
         }
 
-        MoveTowards(target, FollowSpeedPixelsPerSecond, elapsed, 6);
+        MoveTowards(target, FollowSpeedPixelsPerSecond, elapsed, 6, out var appliedDelta);
+        UpdateFacingDirectionFromMovement(appliedDelta);
+        return DidMove(appliedDelta);
     }
 
     private Point PickWanderTarget()
@@ -420,8 +516,9 @@ public partial class MainWindow : Window
         return ClampWindowPosition(target);
     }
 
-    private bool MoveTowards(Point target, double speedPixelsPerSecond, double elapsed, double arrivalThreshold)
+    private bool MoveTowards(Point target, double speedPixelsPerSecond, double elapsed, double arrivalThreshold, out Vector appliedDelta)
     {
+        appliedDelta = default;
         var current = new Point(Left, Top);
         var dx = target.X - current.X;
         var dy = target.Y - current.Y;
@@ -429,6 +526,7 @@ public partial class MainWindow : Window
         if (distance <= arrivalThreshold)
         {
             var snapped = ClampWindowPosition(target);
+            appliedDelta = new Vector(snapped.X - current.X, snapped.Y - current.Y);
             Left = snapped.X;
             Top = snapped.Y;
             UpdateSpeechWindowPosition();
@@ -446,10 +544,34 @@ public partial class MainWindow : Window
             current.Y + (dy / distance * step));
 
         var clamped = ClampWindowPosition(next);
+        appliedDelta = new Vector(clamped.X - current.X, clamped.Y - current.Y);
         Left = clamped.X;
         Top = clamped.Y;
         UpdateSpeechWindowPosition();
         return false;
+    }
+
+    private static bool DidMove(Vector appliedDelta)
+    {
+        return Math.Abs(appliedDelta.X) > 0.01 || Math.Abs(appliedDelta.Y) > 0.01;
+    }
+
+    private void UpdateFacingDirectionFromMovement(Vector appliedDelta)
+    {
+        if (Math.Abs(appliedDelta.X) < FacingChangeThreshold)
+        {
+            return;
+        }
+
+        _facingDirection = appliedDelta.X < 0
+            ? PetFacingDirection.Left
+            : PetFacingDirection.Right;
+        ApplyFacingDirection();
+    }
+
+    private void ApplyFacingDirection()
+    {
+        PetScaleTransform.ScaleX = (int)_facingDirection * SourceSpriteFacingScaleX;
     }
 
     private Point ClampWindowPosition(Point point)
@@ -507,6 +629,22 @@ public partial class MainWindow : Window
 
     private void AdvanceIdleLoopFrame()
     {
+        switch (_animationMode)
+        {
+            case PetAnimationMode.WalkLoop:
+                AdvanceWalkLoopFrame();
+                return;
+            case PetAnimationMode.IdleLoop:
+                AdvanceIdleAnimationFrame();
+                return;
+            default:
+                ApplyCurrentAnimationFrame();
+                return;
+        }
+    }
+
+    private void AdvanceIdleAnimationFrame()
+    {
         if (_idleLoopFrames.Count == 0)
         {
             return;
@@ -514,7 +652,7 @@ public partial class MainWindow : Window
 
         if (_idleLoopFrames.Count == 1)
         {
-            PetImage.Source = _idleLoopFrames[0];
+            ApplyPetFrame(_idleLoopFrames[0]);
             return;
         }
 
@@ -531,7 +669,44 @@ public partial class MainWindow : Window
         }
 
         _idleLoopFrameIndex = nextIndex;
-        PetImage.Source = _idleLoopFrames[_idleLoopFrameIndex];
+        ApplyPetFrame(_idleLoopFrames[_idleLoopFrameIndex]);
+    }
+
+    private void AdvanceWalkLoopFrame()
+    {
+        if (_walkLoopFrames.Count == 0)
+        {
+            SetAnimationMode(GetIdleAnimationMode());
+            return;
+        }
+
+        _walkLoopFrameIndex = (_walkLoopFrameIndex + 1) % _walkLoopFrames.Count;
+        ApplyPetFrame(_walkLoopFrames[_walkLoopFrameIndex]);
+    }
+
+    private void ApplyCurrentAnimationFrame()
+    {
+        switch (_animationMode)
+        {
+            case PetAnimationMode.WalkLoop when _walkLoopFrames.Count > 0:
+                ApplyPetFrame(_walkLoopFrames[_walkLoopFrameIndex]);
+                return;
+            case PetAnimationMode.IdleLoop when _idleLoopFrames.Count > 0:
+                ApplyPetFrame(_idleLoopFrames[_idleLoopFrameIndex]);
+                return;
+            default:
+                if (_idleLoopFrames.Count > 0)
+                {
+                    ApplyPetFrame(_idleLoopFrames[0]);
+                }
+
+                return;
+        }
+    }
+
+    private void ApplyPetFrame(BitmapSource frame)
+    {
+        PetImage.Source = frame;
     }
 
     private void ScheduleNextBlink()
